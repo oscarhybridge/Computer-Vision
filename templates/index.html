@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Login con Reconocimiento Facial</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* Estilo para loader */
+        #loading {
+            display: none;
+            font-weight: bold;
+            margin-top: 10px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔐 Login con Reconocimiento Facial</h1>
+
+    <!-- Video de la cámara -->
+    <video id="video" width="320" height="240" autoplay></video>
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+    <br>
+    <button id="capture">📸 Tomar Foto</button>
+
+    <hr>
+
+    <!-- Subir imagen -->
+    <form id="upload-form" method="POST" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*" required>
+        <button type="submit">Comprobar </button>
+    </form>
+
+    <!-- Loader -->
+    <div id="loading">⏳ Procesando, por favor espera...</div>
+
+    {% if result %}
+        <p class="result">{{ result }}</p>
+    {% endif %}
+</div>
+
+<script>
+    // Elementos del DOM
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureButton = document.getElementById('capture');
+    const loading = document.getElementById('loading');
+    const uploadForm = document.getElementById('upload-form');
+
+    // Encender cámara
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => console.error("Error accediendo a la cámara:", err));
+
+    // Función para enviar imagen capturada
+    captureButton.addEventListener('click', () => {
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+            const formData = new FormData();
+            formData.append("file", blob, "capture.jpg");
+
+            loading.style.display = "block"; // mostrar loader
+
+            fetch("/", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.text())
+            .then(html => {
+                document.body.innerHTML = html;
+            });
+        }, "image/jpeg");
+    });
+
+    // Mostrar loader cuando se sube una imagen
+    uploadForm.addEventListener('submit', () => {
+        loading.style.display = "block";
+    });
+</script>
+</body>
+</html>
+
